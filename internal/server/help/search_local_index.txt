@@ -1,0 +1,38 @@
+Bleve Local Index Search Syntax
+
+The search_local_index tool searches a locally-synced Bleve full-text index.
+
+QUERY SYNTAX:
+  word               - Simple term search
+  "exact phrase"     - Phrase search
+  field:value        - Field-scoped search
+  +required          - Term must be present
+  -excluded          - Term must not be present
+  term~2             - Fuzzy search (edit distance 2)
+  wild*              - Wildcard search
+  term^2             - Boost term relevance
+
+AVAILABLE FIELDS:
+  from               - Sender address/name
+  to                 - Recipient addresses
+  cc                 - CC addresses
+  subject            - Message subject
+  body               - Message body text
+  account            - Account name
+  folder             - Folder name
+  flags              - Message flags
+  date               - Message date (for range queries)
+
+DATE RANGES:
+  Use date_from and date_to parameters (YYYY-MM-DD format)
+
+BOOLEAN OPERATORS:
+  term1 term2        - Both terms (implicit AND)
+  term1 OR term2     - Either term
+  +term1 -term2      - Must include term1, must exclude term2
+
+EXAMPLES:
+  subject:meeting from:alice
+  "quarterly report" +attachment
+  body:invoice from:accounting
+  subject:urgent~1

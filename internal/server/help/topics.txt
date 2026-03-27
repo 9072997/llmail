@@ -1,0 +1,7 @@
+Available Help Topics
+
+  imap_search        - RFC 9051 IMAP SEARCH syntax reference
+  gmail_search       - Gmail native search operator reference
+  search_local_index - Bleve full-text search query syntax
+  detail_levels      - Explanation of headers/full detail levels
+  topics             - This list of available topics

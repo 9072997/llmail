@@ -1,0 +1,47 @@
+Gmail Search Query Syntax
+
+The gmail_search tool uses Gmail's native X-GM-RAW search, which supports all Gmail search operators.
+
+OPERATORS:
+  from:user          - Messages from a sender
+  to:user            - Messages to a recipient
+  cc:user            - Messages CC'd to someone
+  bcc:user           - Messages BCC'd to someone
+  subject:word       - Messages with word in subject
+  label:name         - Messages with a label
+  has:attachment     - Messages with attachments
+  has:drive          - Messages with Google Drive attachments
+  has:document       - Messages with Google Docs
+  has:spreadsheet    - Messages with Google Sheets
+  has:youtube        - Messages with YouTube links
+  in:inbox           - Messages in inbox
+  in:sent            - Messages in sent
+  in:trash           - Messages in trash
+  in:anywhere        - All messages including spam/trash
+  is:unread          - Unread messages
+  is:read            - Read messages
+  is:starred         - Starred messages
+  is:important       - Important messages
+  is:snoozed         - Snoozed messages
+  category:primary   - Primary category
+  category:social    - Social category
+  category:promotions - Promotions category
+  newer_than:2d      - Newer than 2 days (d/m/y)
+  older_than:1y      - Older than 1 year
+  filename:pdf       - Attachments with extension
+  size:5m            - Messages larger than 5MB
+  larger:1m          - Messages larger than 1MB
+  smaller:100k       - Messages smaller than 100KB
+
+BOOLEAN:
+  OR                 - Either term matches
+  -term              - Exclude term
+  "exact phrase"     - Exact phrase match
+  {term1 term2}      - Group OR
+
+EXAMPLES:
+  from:alice subject:meeting newer_than:7d
+  has:attachment filename:pdf
+  is:unread in:inbox -category:promotions
+  from:alice OR from:bob subject:"project update"
+  larger:5m older_than:1y

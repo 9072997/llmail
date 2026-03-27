@@ -1,0 +1,68 @@
+RFC 9051 IMAP SEARCH Command Reference
+
+The imap_search tool accepts a raw IMAP SEARCH query string. Multiple search keys are ANDed together.
+
+SEARCH KEYS:
+
+  Message Status:
+    ALL          - All messages
+    ANSWERED     - Messages with \Answered flag
+    DELETED      - Messages with \Deleted flag
+    DRAFT        - Messages with \Draft flag
+    FLAGGED      - Messages with \Flagged flag
+    NEW          - Recent and not \Seen
+    OLD          - Not recent
+    RECENT       - Messages with \Recent flag
+    SEEN         - Messages with \Seen flag
+    UNANSWERED   - Not \Answered
+    UNDELETED    - Not \Deleted
+    UNDRAFT      - Not \Draft
+    UNFLAGGED    - Not \Flagged
+    UNSEEN       - Not \Seen
+
+  Address Fields:
+    FROM "string"    - From header contains string
+    TO "string"      - To header contains string
+    CC "string"      - CC header contains string
+    BCC "string"     - BCC header contains string
+
+  Content:
+    SUBJECT "string" - Subject contains string
+    BODY "string"    - Body contains string
+    TEXT "string"    - Header or body contains string
+
+  Dates (format: 1-Jan-2024):
+    SINCE date       - Internal date on or after
+    BEFORE date      - Internal date before
+    ON date          - Internal date is exactly
+    SENTSINCE date   - Date header on or after
+    SENTBEFORE date  - Date header before
+    SENTON date      - Date header is exactly
+
+  Size:
+    LARGER n         - Size larger than n bytes
+    SMALLER n        - Size smaller than n bytes
+
+  Headers:
+    HEADER "field" "value" - Header field contains value
+
+  Flags:
+    KEYWORD flag     - Has keyword flag
+    UNKEYWORD flag   - Does not have keyword flag
+
+  UIDs:
+    UID set          - UIDs in the given set (e.g. UID 1:100)
+
+  Boolean:
+    OR (key1) (key2) - Either key1 or key2 matches
+    NOT (key)        - key does not match
+
+EXAMPLES:
+  FROM "alice" SINCE 1-Jan-2024
+  OR FROM "alice" FROM "bob"
+  SUBJECT "meeting" NOT SEEN
+  HEADER "X-Mailer" "Thunderbird"
+  OR (FROM "alice" SUBJECT "urgent") (FLAGGED)
+  UNSEEN SINCE 1-Mar-2024 FROM "boss"
+  LARGER 1000000
+  UID 1:50

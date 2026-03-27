@@ -1,0 +1,20 @@
+Detail Levels
+
+Several tools support a detail_level parameter that controls response verbosity.
+
+LEVELS:
+
+  headers
+    Returns: uid, from, subject, date
+    Best for: Scanning large result sets, getting an overview
+
+  full
+    Returns: All envelope fields, flags, unsubscribe info, full message body
+    Best for: Reading messages, reviewing thread content, detailed inspection
+
+TOOL DEFAULTS:
+  imap_search    → headers
+  gmail_search   → headers
+  list_messages  → headers
+  get_thread     → full
+  get_message    → full
