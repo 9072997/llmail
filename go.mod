@@ -23,7 +23,7 @@ require (
 
 replace github.com/emersion/go-imap/v2 v2.0.0-beta.8 => ./vendored/go-imap-v2
 
-replace github.com/sugarme/tokenizer v0.3.1-0.20251127070628-8dac234bfe56 => github.com/9072997/tokenizer v0.3.1
+replace github.com/sugarme/tokenizer v0.3.1-0.20251127070628-8dac234bfe56 => github.com/9072997/tokenizer v0.3.3
 
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.16.0 // indirect
