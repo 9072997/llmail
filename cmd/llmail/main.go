@@ -113,8 +113,7 @@ func chatCmd() *cobra.Command {
 				return fmt.Errorf("creating server: %w", err)
 			}
 
-			ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-			defer cancel()
+			ctx := context.Background()
 
 			srv.Start(ctx)
 			defer srv.Shutdown()

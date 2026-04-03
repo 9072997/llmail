@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jpennington/llmail/internal/config"
@@ -97,10 +99,14 @@ func (s *ChatSession) Run(ctx context.Context) error {
 			s.printIndexStatus()
 			continue
 		case "/sync":
-			s.syncNow(ctx)
+			msgCtx, msgCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			s.syncNow(msgCtx)
+			msgCancel()
 			continue
 		case "/compact":
-			s.compact(ctx)
+			msgCtx, msgCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			s.compact(msgCtx)
+			msgCancel()
 			continue
 		case "/help":
 			fmt.Println("Commands:")
@@ -119,12 +125,16 @@ func (s *ChatSession) Run(ctx context.Context) error {
 			Content: []llm.ContentPart{{Type: "text", Text: input}},
 		})
 
-		// Tool loop: keep calling the LLM until it stops requesting tools
-		if err := s.runToolLoop(ctx); err != nil {
+		// Tool loop: keep calling the LLM until it stops requesting tools.
+		// Create a fresh signal context per message so Ctrl+C only cancels
+		// the current request and doesn't poison subsequent messages.
+		msgCtx, msgCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		if err := s.runToolLoop(msgCtx); err != nil {
 			for _, line := range strings.Split(fmt.Sprintf("Error: %v", err), "\n") {
 				fmt.Fprintln(os.Stderr, errorStyle.Render(line))
 			}
 		}
+		msgCancel()
 		fmt.Println()
 	}
 
