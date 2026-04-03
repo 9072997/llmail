@@ -27,6 +27,7 @@ func (s *Server) registerGmailTools() {
 			mcp.WithNumber("limit", mcp.Description("Max results to return (default 20, max 100)")),
 			mcp.WithNumber("offset", mcp.Description("Result offset for pagination (default 0)")),
 			mcp.WithString("detail_level", mcp.Description("Detail level: headers, full (default: headers)")),
+			mcp.WithBoolean("prefer_html", mcp.Description("Prefer HTML body over plain text")),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Gmail Search",
 				ReadOnlyHint: mcp.ToBoolPtr(true),
@@ -56,12 +57,14 @@ func (s *Server) handleGmailSearch(ctx context.Context, req mcp.CallToolRequest)
 		return errorResult("query parameter is required"), nil
 	}
 
+	preferHTML, _ := args["prefer_html"].(bool)
 	params := imaplib.GmailSearchParams{
 		Query:       query,
 		Folder:      stringFrom(args, "folder"),
 		Limit:       intFrom(args, "limit"),
 		Offset:      intFrom(args, "offset"),
 		DetailLevel: imaplib.ParseDetailLevel(stringFrom(args, "detail_level"), imaplib.DetailHeaders),
+		PreferHTML:  preferHTML,
 	}
 
 	c, err := s.pool.Get(ctx, account)

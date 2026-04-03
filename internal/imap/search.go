@@ -101,6 +101,7 @@ func ListMessages(ctx context.Context, c *imapclient.Client, folder string, limi
 // FetchParams holds optional parameters for paginateAndFetch.
 type FetchParams struct {
 	GmailLabels bool
+	PreferHTML  bool
 }
 
 // paginateAndFetch handles UID reversal, pagination, and fetching at the given detail level.
@@ -129,7 +130,8 @@ func paginateAndFetch(ctx context.Context, c *imapclient.Client, allUIDs []imap.
 	}
 
 	gmailLabels := params != nil && params.GmailLabels
-	messages, err := FetchByLevel(ctx, c, uidSet, level, gmailLabels)
+	preferHTML := params != nil && params.PreferHTML
+	messages, err := FetchByLevel(ctx, c, uidSet, level, gmailLabels, preferHTML)
 	if err != nil {
 		return nil, err
 	}

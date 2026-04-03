@@ -17,6 +17,7 @@ Note: Only searches within the specified folder. For Gmail, use [Gmail]/All Mail
 			mcp.WithString("folder", mcp.Required(), mcp.Description("Folder containing the message")),
 			mcp.WithNumber("uid", mcp.Required(), mcp.Description("UID of any message in the thread")),
 			mcp.WithString("detail_level", mcp.Description("Detail level: headers, full (default: full)")),
+			mcp.WithBoolean("prefer_html", mcp.Description("Prefer HTML body over plain text")),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Thread",
 				ReadOnlyHint: mcp.ToBoolPtr(true),
@@ -42,6 +43,7 @@ func (s *Server) handleGetThread(ctx context.Context, req mcp.CallToolRequest) (
 	}
 
 	level := imaplib.ParseDetailLevel(stringFrom(args, "detail_level"), imaplib.DetailFull)
+	preferHTML, _ := args["prefer_html"].(bool)
 
 	c, err := s.pool.Get(ctx, account)
 	if err != nil {
@@ -49,7 +51,7 @@ func (s *Server) handleGetThread(ctx context.Context, req mcp.CallToolRequest) (
 	}
 	defer s.pool.Put(account, c)
 
-	result, err := imaplib.GetThread(ctx, c, folder, uid, level)
+	result, err := imaplib.GetThread(ctx, c, folder, uid, level, preferHTML)
 	if err != nil {
 		s.pool.Discard(account, c)
 		return errorResult("getting thread: " + err.Error()), nil

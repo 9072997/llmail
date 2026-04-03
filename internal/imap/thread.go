@@ -16,7 +16,7 @@ type ThreadResult struct {
 
 // GetThread retrieves all messages in a thread containing the given UID.
 // It first attempts the IMAP THREAD command, then falls back to References/In-Reply-To header chasing.
-func GetThread(ctx context.Context, c *imapclient.Client, folder string, uid uint32, level DetailLevel) (*ThreadResult, error) {
+func GetThread(ctx context.Context, c *imapclient.Client, folder string, uid uint32, level DetailLevel, preferHTML bool) (*ThreadResult, error) {
 	selectCmd := c.Select(folder, &imap.SelectOptions{ReadOnly: true})
 	if _, err := selectCmd.Wait(); err != nil {
 		return nil, fmt.Errorf("selecting folder %q: %w", folder, err)
@@ -34,18 +34,18 @@ func GetThread(ctx context.Context, c *imapclient.Client, folder string, uid uin
 	}
 
 	if hasThread {
-		result, err := getThreadViaIMAP(ctx, c, uid, level)
+		result, err := getThreadViaIMAP(ctx, c, uid, level, preferHTML)
 		if err == nil {
 			return result, nil
 		}
 		// Fall through to references-based approach on error
 	}
 
-	return getThreadViaReferences(ctx, c, folder, uid, level)
+	return getThreadViaReferences(ctx, c, folder, uid, level, preferHTML)
 }
 
 // getThreadViaIMAP uses the IMAP THREAD command to find related messages.
-func getThreadViaIMAP(ctx context.Context, c *imapclient.Client, uid uint32, level DetailLevel) (*ThreadResult, error) {
+func getThreadViaIMAP(ctx context.Context, c *imapclient.Client, uid uint32, level DetailLevel, preferHTML bool) (*ThreadResult, error) {
 	threadData, err := c.UIDThread(&imapclient.ThreadOptions{
 		Algorithm:      imap.ThreadReferences,
 		SearchCriteria: &imap.SearchCriteria{},
@@ -72,7 +72,7 @@ func getThreadViaIMAP(ctx context.Context, c *imapclient.Client, uid uint32, lev
 		uidSet.AddNum(imap.UID(u))
 	}
 
-	messages, err := FetchByLevel(ctx, c, uidSet, level, false)
+	messages, err := FetchByLevel(ctx, c, uidSet, level, false, preferHTML)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func getThreadViaIMAP(ctx context.Context, c *imapclient.Client, uid uint32, lev
 }
 
 // getThreadViaReferences uses Message-ID/References/In-Reply-To headers to find thread members.
-func getThreadViaReferences(ctx context.Context, c *imapclient.Client, folder string, uid uint32, level DetailLevel) (*ThreadResult, error) {
+func getThreadViaReferences(ctx context.Context, c *imapclient.Client, folder string, uid uint32, level DetailLevel, preferHTML bool) (*ThreadResult, error) {
 	// First, fetch the target message's full headers to get Message-ID, References, In-Reply-To
 	targetUID := imap.UIDSet{}
 	targetUID.AddNum(imap.UID(uid))
@@ -175,7 +175,7 @@ func getThreadViaReferences(ctx context.Context, c *imapclient.Client, folder st
 		uidSet.AddNum(u)
 	}
 
-	messages, err := FetchByLevel(ctx, c, uidSet, level, false)
+	messages, err := FetchByLevel(ctx, c, uidSet, level, false, preferHTML)
 	if err != nil {
 		return nil, err
 	}

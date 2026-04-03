@@ -203,7 +203,7 @@ func formatIndexSearchResult(result *indexer.SearchResult) string {
 
 // --- Single message formatter ---
 
-func formatFullMessage(msg *imaplib.FullMessage) string {
+func formatFullMessage(msg *imaplib.FullMessage, preferHTML bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "UID: %d\n", msg.UID)
 	fmt.Fprintf(&b, "Date: %s\n", msg.Date)
@@ -231,11 +231,18 @@ func formatFullMessage(msg *imaplib.FullMessage) string {
 		}
 	}
 
-	if msg.TextBody != "" {
-		fmt.Fprintf(&b, "\n%s\n", msg.TextBody)
-	}
-	if msg.HTMLBody != "" {
-		fmt.Fprintf(&b, "\n--- HTML Body ---\n%s\n", msg.HTMLBody)
+	if preferHTML {
+		if msg.HTMLBody != "" {
+			fmt.Fprintf(&b, "\n%s\n", msg.HTMLBody)
+		} else if msg.TextBody != "" {
+			fmt.Fprintf(&b, "\n%s\n", msg.TextBody)
+		}
+	} else {
+		if msg.TextBody != "" {
+			fmt.Fprintf(&b, "\n%s\n", msg.TextBody)
+		} else if msg.HTMLBody != "" {
+			fmt.Fprintf(&b, "\n--- HTML Body ---\n%s\n", msg.HTMLBody)
+		}
 	}
 
 	if len(msg.Attachments) > 0 {

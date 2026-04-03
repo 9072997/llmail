@@ -83,7 +83,7 @@ func TestAppendMessage(t *testing.T) {
 		t.Fatal("AppendMessage returned UID 0")
 	}
 
-	msg, err := FetchMessage(ctx, c, folder, res.UID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, res.UID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestAppendMessageHTML(t *testing.T) {
 
 	uid := seedHTMLMessage(t, c, folder)
 
-	msg, err := FetchMessage(ctx, c, folder, uid, false, false)
+	msg, err := FetchMessage(ctx, c, folder, uid, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestAppendMessageFlags(t *testing.T) {
 		t.Fatalf("AppendMessage: %v", err)
 	}
 
-	msg, err := FetchMessage(ctx, c, folder, res.UID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, res.UID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestFetchByLevel_Minimal(t *testing.T) {
 	}
 
 	uidSet := UIDSetFromUID(uids[0])
-	msgs, err := FetchByLevel(ctx, c, uidSet, DetailHeaders, false)
+	msgs, err := FetchByLevel(ctx, c, uidSet, DetailHeaders, false, false)
 	if err != nil {
 		t.Fatalf("FetchByLevel minimal: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestFetchByLevel_Full(t *testing.T) {
 	}
 
 	uidSet := UIDSetFromUID(uids[0])
-	msgs, err := FetchByLevel(ctx, c, uidSet, DetailFull, false)
+	msgs, err := FetchByLevel(ctx, c, uidSet, DetailFull, false, false)
 	if err != nil {
 		t.Fatalf("FetchByLevel full: %v", err)
 	}
@@ -240,7 +240,7 @@ func TestFetchMessage(t *testing.T) {
 
 	uids := seedMessages(t, c, folder, 1)
 
-	msg, err := FetchMessage(ctx, c, folder, uids[0], false, false)
+	msg, err := FetchMessage(ctx, c, folder, uids[0], false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -272,7 +272,7 @@ func TestFetchMessage_RawHeaders(t *testing.T) {
 
 	uids := seedMessages(t, c, folder, 1)
 
-	msg, err := FetchMessage(ctx, c, folder, uids[0], false, true)
+	msg, err := FetchMessage(ctx, c, folder, uids[0], true)
 	if err != nil {
 		t.Fatalf("FetchMessage with raw headers: %v", err)
 	}
@@ -293,7 +293,7 @@ func TestFetchMessage_NotFound(t *testing.T) {
 	ctx := context.Background()
 	folder := setupTestFolder(t, c)
 
-	_, err := FetchMessage(ctx, c, folder, 99999, false, false)
+	_, err := FetchMessage(ctx, c, folder, 99999, false)
 	if err == nil {
 		t.Error("expected error for non-existent UID, got nil")
 	}
@@ -639,7 +639,7 @@ func TestSetFlags_Add(t *testing.T) {
 	}
 
 	// Fetch and verify
-	msg, err := FetchMessage(ctx, c, folder, uids[0], false, false)
+	msg, err := FetchMessage(ctx, c, folder, uids[0], false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -677,7 +677,7 @@ func TestSetFlags_Remove(t *testing.T) {
 	}
 
 	// Fetch and verify
-	msg, err := FetchMessage(ctx, c, folder, res.UID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, res.UID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -698,7 +698,7 @@ func TestGetThread(t *testing.T) {
 	// GetThread should return at least the target message and use a valid method.
 	// Full thread resolution depends on server capabilities (THREAD=REFERENCES)
 	// and header search support, which varies by server.
-	result, err := GetThread(ctx, c, folder, uids[2], DetailHeaders)
+	result, err := GetThread(ctx, c, folder, uids[2], DetailHeaders, false)
 	if err != nil {
 		t.Fatalf("GetThread: %v", err)
 	}
@@ -741,7 +741,7 @@ func TestGetThread_SingleMessage(t *testing.T) {
 
 	uids := seedMessages(t, c, folder, 1)
 
-	result, err := GetThread(ctx, c, folder, uids[0], DetailHeaders)
+	result, err := GetThread(ctx, c, folder, uids[0], DetailHeaders, false)
 	if err != nil {
 		t.Fatalf("GetThread: %v", err)
 	}
@@ -927,7 +927,7 @@ func TestEditMessage_Subject(t *testing.T) {
 	}
 
 	// Verify the new message has the updated subject
-	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -940,7 +940,7 @@ func TestEditMessage_Subject(t *testing.T) {
 	}
 
 	// Verify the old message is gone
-	_, err = FetchMessage(ctx, c, folder, uids[0], false, false)
+	_, err = FetchMessage(ctx, c, folder, uids[0], false)
 	if err == nil {
 		t.Error("old message should have been deleted")
 	}
@@ -963,7 +963,7 @@ func TestEditMessage_Body(t *testing.T) {
 		t.Fatalf("EditMessage: %v", err)
 	}
 
-	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -995,7 +995,7 @@ func TestEditMessage_MultipleFields(t *testing.T) {
 		t.Fatalf("EditMessage: %v", err)
 	}
 
-	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}
@@ -1039,7 +1039,7 @@ func TestEditMessage_PreservesFlags(t *testing.T) {
 		t.Fatalf("EditMessage: %v", err)
 	}
 
-	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false, false)
+	msg, err := FetchMessage(ctx, c, folder, result.NewUID, false)
 	if err != nil {
 		t.Fatalf("FetchMessage: %v", err)
 	}

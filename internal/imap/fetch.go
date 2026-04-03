@@ -41,7 +41,7 @@ type AttachmentInfo struct {
 
 // FetchByLevel fetches messages at the specified detail level.
 // If gmailLabels is true, X-GM-LABELS will be requested (requires X-GM-EXT-1).
-func FetchByLevel(ctx context.Context, c *imapclient.Client, uidSet imap.UIDSet, level DetailLevel, gmailLabels bool) ([]MessageSummary, error) {
+func FetchByLevel(ctx context.Context, c *imapclient.Client, uidSet imap.UIDSet, level DetailLevel, gmailLabels bool, preferHTML bool) ([]MessageSummary, error) {
 	fetchOptions := FetchOptionsByLevel(level)
 	fetchOptions.GmailLabels = gmailLabels
 
@@ -88,7 +88,7 @@ func FetchByLevel(ctx context.Context, c *imapclient.Client, uidSet imap.UIDSet,
 			if bs.Bytes == nil {
 				continue
 			}
-			summary.TextBody = extractFullText(bs.Bytes)
+			summary.TextBody = extractBodyText(bs.Bytes, preferHTML)
 			summary.Unsubscribe = extractUnsubscribe(bs.Bytes)
 		}
 
@@ -101,10 +101,10 @@ func FetchByLevel(ctx context.Context, c *imapclient.Client, uidSet imap.UIDSet,
 // FetchSummaries fetches message summaries (standard detail level).
 // Kept for backward compatibility.
 func FetchSummaries(ctx context.Context, c *imapclient.Client, uidSet imap.UIDSet) ([]MessageSummary, error) {
-	return FetchByLevel(ctx, c, uidSet, DetailFull, false)
+	return FetchByLevel(ctx, c, uidSet, DetailFull, false, false)
 }
 
-func FetchMessage(ctx context.Context, c *imapclient.Client, folder string, uid uint32, preferHTML bool, includeRawHeaders bool) (*FullMessage, error) {
+func FetchMessage(ctx context.Context, c *imapclient.Client, folder string, uid uint32, includeRawHeaders bool) (*FullMessage, error) {
 	selectCmd := c.Select(folder, &imap.SelectOptions{ReadOnly: true})
 	if _, err := selectCmd.Wait(); err != nil {
 		return nil, fmt.Errorf("selecting folder %q: %w", folder, err)
@@ -335,13 +335,17 @@ func parseMIME(body []byte, result *FullMessage, includeRawHeaders bool) {
 // extractFullText extracts the full plain text body from a message.
 // Falls back to raw HTML if no text/plain part exists.
 func extractFullText(body []byte) string {
+	return extractBodyText(body, false)
+}
+
+func extractBodyText(body []byte, preferHTML bool) string {
 	reader, err := mail.CreateReader(bytes.NewReader(body))
 	if err != nil && !message.IsUnknownCharset(err) {
 		return string(body)
 	}
 	defer reader.Close()
 
-	var htmlFallback string
+	var plainText, htmlText string
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
@@ -352,23 +356,33 @@ func extractFullText(body []byte) string {
 		}
 		if h, ok := part.Header.(*mail.InlineHeader); ok {
 			ct, _, _ := h.ContentType()
-			if strings.HasPrefix(ct, "text/plain") {
-				bodyBytes, err := io.ReadAll(part.Body)
-				if err != nil {
-					break
-				}
-				return string(bodyBytes)
-			}
-			if strings.HasPrefix(ct, "text/html") && htmlFallback == "" {
+			if strings.HasPrefix(ct, "text/plain") && plainText == "" {
 				bodyBytes, err := io.ReadAll(part.Body)
 				if err != nil {
 					continue
 				}
-				htmlFallback = string(bodyBytes)
+				plainText = string(bodyBytes)
+			}
+			if strings.HasPrefix(ct, "text/html") && htmlText == "" {
+				bodyBytes, err := io.ReadAll(part.Body)
+				if err != nil {
+					continue
+				}
+				htmlText = string(bodyBytes)
 			}
 		}
 	}
-	return htmlFallback
+
+	if preferHTML {
+		if htmlText != "" {
+			return htmlText
+		}
+		return plainText
+	}
+	if plainText != "" {
+		return plainText
+	}
+	return htmlText
 }
 
 // extractUnsubscribe parses List-Unsubscribe headers from raw RFC822 bytes.

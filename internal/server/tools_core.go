@@ -69,6 +69,7 @@ Examples:
 			mcp.WithNumber("limit", mcp.Description("Max results to return (default 20, max 100)")),
 			mcp.WithNumber("offset", mcp.Description("Result offset for pagination (default 0)")),
 			mcp.WithString("detail_level", mcp.Description("Detail level: headers, full (default: headers)")),
+			mcp.WithBoolean("prefer_html", mcp.Description("Prefer HTML body over plain text")),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "IMAP Search",
 				ReadOnlyHint: mcp.ToBoolPtr(true),
@@ -85,6 +86,7 @@ Examples:
 			mcp.WithNumber("limit", mcp.Description("Max results to return (default 20, max 100)")),
 			mcp.WithNumber("offset", mcp.Description("Result offset for pagination (default 0)")),
 			mcp.WithString("detail_level", mcp.Description("Detail level: headers, full (default: headers)")),
+			mcp.WithBoolean("prefer_html", mcp.Description("Prefer HTML body over plain text")),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Messages",
 				ReadOnlyHint: mcp.ToBoolPtr(true),
@@ -214,6 +216,7 @@ func (s *Server) handleIMAPSearch(ctx context.Context, req mcp.CallToolRequest) 
 		return errorResult("query parameter is required"), nil
 	}
 
+	preferHTML, _ := args["prefer_html"].(bool)
 	params := imap.RawSearchParams{
 		Folder:      stringFrom(args, "folder"),
 		Query:       query,
@@ -228,7 +231,7 @@ func (s *Server) handleIMAPSearch(ctx context.Context, req mcp.CallToolRequest) 
 	}
 	defer s.pool.Put(account, c)
 
-	result, err := imap.RawSearch(ctx, c, params, nil)
+	result, err := imap.RawSearch(ctx, c, params, &imap.FetchParams{PreferHTML: preferHTML})
 	if err != nil {
 		s.pool.Discard(account, c)
 		return errorResult("searching: " + err.Error()), nil
@@ -248,6 +251,7 @@ func (s *Server) handleListMessages(ctx context.Context, req mcp.CallToolRequest
 	limit := intFrom(args, "limit")
 	offset := intFrom(args, "offset")
 	level := imap.ParseDetailLevel(stringFrom(args, "detail_level"), imap.DetailHeaders)
+	preferHTML, _ := args["prefer_html"].(bool)
 
 	c, err := s.pool.Get(ctx, account)
 	if err != nil {
@@ -255,7 +259,7 @@ func (s *Server) handleListMessages(ctx context.Context, req mcp.CallToolRequest
 	}
 	defer s.pool.Put(account, c)
 
-	result, err := imap.ListMessages(ctx, c, folder, limit, offset, level, nil)
+	result, err := imap.ListMessages(ctx, c, folder, limit, offset, level, &imap.FetchParams{PreferHTML: preferHTML})
 	if err != nil {
 		s.pool.Discard(account, c)
 		return errorResult("listing messages: " + err.Error()), nil
@@ -280,6 +284,7 @@ func (s *Server) handleGetMessage(ctx context.Context, req mcp.CallToolRequest) 
 		return errorResult("uid parameter is required"), nil
 	}
 	includeRawHeaders, _ := args["include_raw_headers"].(bool)
+	preferHTML, _ := args["prefer_html"].(bool)
 
 	level := imap.ParseDetailLevel(stringFrom(args, "detail_level"), imap.DetailFull)
 
@@ -292,7 +297,7 @@ func (s *Server) handleGetMessage(ctx context.Context, req mcp.CallToolRequest) 
 	// For minimal/standard levels, use the summary fetcher
 	if level != imap.DetailFull {
 		uidSet := imap.UIDSetFromUID(uid)
-		messages, err := imap.FetchByLevel(ctx, c, uidSet, level, false)
+		messages, err := imap.FetchByLevel(ctx, c, uidSet, level, false, preferHTML)
 		if err != nil {
 			s.pool.Discard(account, c)
 			return errorResult("fetching message: " + err.Error()), nil
@@ -303,7 +308,7 @@ func (s *Server) handleGetMessage(ctx context.Context, req mcp.CallToolRequest) 
 		return s.checkGuard(formatSingleSummary(&messages[0])), nil
 	}
 
-	msg, err := imap.FetchMessage(ctx, c, folder, uid, false, includeRawHeaders)
+	msg, err := imap.FetchMessage(ctx, c, folder, uid, includeRawHeaders)
 	if err != nil {
 		s.pool.Discard(account, c)
 		return errorResult("fetching message: " + err.Error()), nil
@@ -314,7 +319,7 @@ func (s *Server) handleGetMessage(ctx context.Context, req mcp.CallToolRequest) 
 		msg.Attachments[i].ResourceURI = attachmentResourceURI(account, folder, uid, msg.Attachments[i].PartNumber)
 	}
 
-	return s.checkGuard(formatFullMessage(msg)), nil
+	return s.checkGuard(formatFullMessage(msg, preferHTML)), nil
 }
 
 func (s *Server) handleGetAttachment(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

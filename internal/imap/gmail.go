@@ -22,6 +22,7 @@ type GmailSearchParams struct {
 	Limit       int         `json:"limit"`
 	Offset      int         `json:"offset"`
 	DetailLevel DetailLevel `json:"detail_level"`
+	PreferHTML  bool        `json:"prefer_html,omitempty"`
 }
 
 // GmailSearch performs a Gmail X-GM-RAW search using the vendored RawKeys support.
@@ -53,7 +54,7 @@ func GmailSearch(ctx context.Context, c *imapclient.Client, params GmailSearchPa
 		return &SearchResult{TotalMatches: 0, Folder: folder, Messages: []MessageSummary{}}, nil
 	}
 
-	return paginateAndFetch(ctx, c, allUIDs, totalMatches, params.Limit, params.Offset, params.DetailLevel, folder, &FetchParams{GmailLabels: true})
+	return paginateAndFetch(ctx, c, allUIDs, totalMatches, params.Limit, params.Offset, params.DetailLevel, folder, &FetchParams{GmailLabels: true, PreferHTML: params.PreferHTML})
 }
 
 func escapeGmailQuery(query string) string {

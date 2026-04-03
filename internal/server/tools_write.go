@@ -627,7 +627,7 @@ func (s *Server) handleUnsubscribe(ctx context.Context, req mcp.CallToolRequest)
 
 	var results []string
 	for _, uid := range uids {
-		msg, err := imaplib.FetchMessage(ctx, c, folder, uid, false, false)
+		msg, err := imaplib.FetchMessage(ctx, c, folder, uid, false)
 		if err != nil {
 			s.pool.Discard(account, c)
 			results = append(results, fmt.Sprintf("UID %d: error fetching message: %s", uid, err))
